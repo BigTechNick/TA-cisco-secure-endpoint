@@ -1,0 +1,218 @@
+<form version="1.1" theme="light">
+  <label>Status</label>
+  <description>Collector health per input and data type: last collection, records written, how far behind, errors, and what reached the index. Collector logs come from index _internal; data from the index entered below (* = all indexes, slower).</description>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="global_time" searchWhenChanged="true">
+      <label>Time range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="text" token="idx" searchWhenChanged="true">
+      <label>Data index (* = all)</label>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="input" searchWhenChanged="true">
+      <label>Input</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>input</fieldForLabel>
+      <fieldForValue>input</fieldForValue>
+      <search>
+        <query><![CDATA[| tstats count where index=_internal sourcetype="cisco:se:ta:log" by source
+| rex field=source "cisco_se_(?<input>[^/\\\\]+?)\.log(?:\.\d+)?$$"
+| stats sum(count) as count by input
+| sort input]]></query>
+        <earliest>-7d</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Data types now (last 8 days)</title>
+      <table>
+        <search>
+          <query><![CDATA[index=_internal sourcetype="cisco:se:ta:log" source="*cisco_se_$input$.log*" ("collected" OR "failed")
+| rex field=source "cisco_se_(?<input>[^/\\\\]+?)\.log(?:\.\d+)?$$"
+| rex "^\S+ \S+ (?<log_level>[A-Z]+) (?<what>collected|failed) (?<data_type>[a-z]+): (?<detail>.*)$$"
+| where isnotnull(data_type)
+| rex field=detail "^written (?<written>\d+)"
+| rex field=detail "behind (?<behind_min>-?[\d.]+) min"
+| rex field=detail "newest (?<newest_min>-?[\d.]+) min ago"
+| eval ok_time=if(what=="collected", _time, null()), err=if(what=="failed", detail, null()), err_time=if(what=="failed", _time, null())
+| stats latest(_time) as last latest(what) as last_result max(ok_time) as last_ok latest(written) as last_written sum(written) as written_8d latest(behind_min) as behind_min latest(newest_min) as newest_min max(err_time) as err_time latest(err) as last_error by input data_type
+| eval status=case(last_result=="failed", "FAILED", tonumber(behind_min)>60, "BEHIND", true(), "OK")
+| eval order=case(data_type=="events", 1, data_type=="audit", 2, data_type=="compromises", 3, data_type=="metrics", 4, data_type=="computers", 5, true(), 6)
+| sort input order
+| eval last=strftime(last, "%F %T"), last_ok=strftime(last_ok, "%F %T"), last_error=if(status=="FAILED", last_error, null())
+| table input data_type status last last_ok last_written written_8d behind_min newest_min last_error]]></query>
+          <earliest>-8d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="count">30</option>
+        <option name="drilldown">none</option>
+        <format type="color" field="status">
+          <colorPalette type="map">{"OK":#2E8540,"BEHIND":#B26B00,"FAILED":#C42B1C}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Records written per collection, by data type</title>
+      <chart>
+        <search>
+          <query><![CDATA[index=_internal sourcetype="cisco:se:ta:log" source="*cisco_se_$input$.log*" "collected"
+| rex "^\S+ \S+ [A-Z]+ collected (?<data_type>[a-z]+): written (?<written>\d+)"
+| where isnotnull(data_type)
+| timechart sum(written) by data_type]]></query>
+          <earliest>$global_time.earliest$</earliest>
+          <latest>$global_time.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.axisTitleY.text">records</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">300</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Minutes behind: newest event collected (events) and end of the last window (audit logs)</title>
+      <chart>
+        <search>
+          <query><![CDATA[index=_internal sourcetype="cisco:se:ta:log" source="*cisco_se_$input$.log*" "collected" ("behind" OR "newest")
+| rex field=source "cisco_se_(?<input>[^/\\\\]+?)\.log(?:\.\d+)?$$"
+| rex "^\S+ \S+ [A-Z]+ collected (?<data_type>events|audit): "
+| rex "behind (?<behind_min>-?[\d.]+) min"
+| rex "newest (?<newest_min>-?[\d.]+) min ago"
+| eval series=input . " " . data_type, minutes=coalesce(behind_min, newest_min)
+| where isnotnull(data_type)
+| timechart max(minutes) by series]]></query>
+          <earliest>$global_time.earliest$</earliest>
+          <latest>$global_time.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.axisTitleY.text">minutes</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">300</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Run log: collections, first runs, stops, failures</title>
+      <table>
+        <search>
+          <query><![CDATA[index=_internal sourcetype="cisco:se:ta:log" source="*cisco_se_$input$.log*" ("collected" OR "failed" OR "run done" OR "run failed" OR "run stopped" OR "first run" OR "run requested" OR "account changed")
+| rex field=source "cisco_se_(?<input>[^/\\\\]+?)\.log(?:\.\d+)?$$"
+| rex "^\S+ \S+ (?<log_level>DEBUG|INFO|WARNING|ERROR|CRITICAL) (?<message>.*)"
+| table _time input log_level message
+| sort - _time]]></query>
+          <earliest>$global_time.earliest$</earliest>
+          <latest>$global_time.latest$</latest>
+        </search>
+        <option name="count">15</option>
+        <option name="drilldown">none</option>
+        <format type="color" field="log_level">
+          <colorPalette type="map">{"ERROR":#C42B1C,"CRITICAL":#C42B1C,"WARNING":#B26B00,"INFO":#3C6FB4}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Errors and warnings (grouped)</title>
+      <table>
+        <search>
+          <query><![CDATA[index=_internal sourcetype="cisco:se:ta:log" source="*cisco_se_$input$.log*" (WARNING OR ERROR OR CRITICAL)
+| rex field=source "cisco_se_(?<input>[^/\\\\]+?)\.log(?:\.\d+)?$$"
+| rex "^\S+ \S+ (?<log_level>DEBUG|INFO|WARNING|ERROR|CRITICAL) (?<message>.*)"
+| search log_level IN (WARNING, ERROR, CRITICAL)
+| eval pattern=replace(message, "\d+", "N")
+| stats count latest(_time) as last_seen latest(message) as latest_example by input log_level pattern
+| sort - last_seen
+| eval last_seen=strftime(last_seen, "%F %T")
+| table input log_level count last_seen latest_example]]></query>
+          <earliest>$global_time.earliest$</earliest>
+          <latest>$global_time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+        <format type="color" field="log_level">
+          <colorPalette type="map">{"ERROR":#C42B1C,"CRITICAL":#C42B1C,"WARNING":#B26B00,"INFO":#3C6FB4}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Indexed records per account and sourcetype (by event time, 1-hour buckets)</title>
+      <chart>
+        <search>
+          <query><![CDATA[| tstats count where index="$idx$" (sourcetype="cisco:se" OR sourcetype="cisco:se:audit") by _time host sourcetype span=1h
+| eval series=host . " " . sourcetype
+| timechart span=1h sum(count) by series]]></query>
+          <earliest>$global_time.earliest$</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.axisTitleY.text">records</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="height">300</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>How late data arrives (index time minus event time, last 4 hours indexed)</title>
+      <table>
+        <search>
+          <query><![CDATA[index="$idx$" (sourcetype="cisco:se" OR sourcetype="cisco:se:audit") _index_earliest=-4h
+| eval data_type=if(sourcetype=="cisco:se:audit", "audit", coalesce(EndpointDataType, "?")), lag_min=(_indextime-_time)/60
+| stats count as records perc50(lag_min) as p50_min perc95(lag_min) as p95_min max(lag_min) as max_min by host data_type
+| foreach *_min [ eval <<FIELD>>=round(<<FIELD>>, 1) ]]]></query>
+          <earliest>-30d</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Splunk messages about the input (start-up and script errors)</title>
+      <table>
+        <search>
+          <query><![CDATA[index=_internal sourcetype=splunkd (component=ExecProcessor OR component=ModularInputs) "cisco_secure_endpoint" log_level!=INFO
+| eval message=coalesce(event_message, _raw)
+| table _time host log_level component message
+| sort - _time]]></query>
+          <earliest>$global_time.earliest$</earliest>
+          <latest>$global_time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Changes made on the Inputs page</title>
+      <table>
+        <search>
+          <query><![CDATA[index=_internal sourcetype="cisco:se:ta:webapi"
+| rex "^\S+ \S+ (?<log_level>[A-Z]+) (?<message>.*)"
+| table _time host log_level message
+| sort - _time]]></query>
+          <earliest>$global_time.earliest$</earliest>
+          <latest>$global_time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,8 @@
+<nav search_view="search" color="#1F6F8B">
+  <view name="cisco_se_status" default="true"/>
+  <view name="cisco_se_inputs"/>
+  <view name="search"/>
+  <collection label="More">
+    <a href="/manager/TA-cisco-secure-endpoint/data/inputs/cisco_secure_endpoint">Inputs in Settings &gt; Data inputs</a>
+  </collection>
+</nav>

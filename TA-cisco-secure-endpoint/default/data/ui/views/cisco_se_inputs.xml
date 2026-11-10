@@ -1,0 +1,11 @@
+<dashboard version="1.1" script="cisco_se_inputs.js" stylesheet="cisco_se_inputs.css" hideEdit="true" isDashboard="false">
+  <label>Inputs</label>
+  <description>Secure Endpoint accounts (API host, client ID, API key) and the inputs that collect events, audit logs, compromises, computers, vulnerabilities and top malware threats with them.</description>
+  <row>
+    <panel>
+      <html>
+        <div id="cse-inputs-app">Loading...</div>
+      </html>
+    </panel>
+  </row>
+</dashboard>

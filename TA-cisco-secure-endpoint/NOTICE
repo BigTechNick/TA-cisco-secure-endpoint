@@ -1,0 +1,17 @@
+TA-cisco-secure-endpoint (Cisco Secure Endpoint add-on for Splunk)
+Copyright 2026 Nikhil Chawla
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This add-on is an independent project. It is not affiliated with, endorsed by
+or supported by Cisco Systems, Inc. Cisco, Cisco Secure Endpoint and AMP for
+Endpoints are trademarks or registered trademarks of Cisco Systems, Inc. and/or
+its affiliates. Splunk is a trademark of Splunk LLC. Other names are the
+trademarks of their owners and are used here only to describe what the add-on
+works with.
+
+The API client is written from Cisco's public Secure Endpoint API v1
+documentation. The add-on contains no Cisco code. Field names are the ones the
+Secure Endpoint API returns; the cisco:se event format (the API's JSON plus
+EndpointDataType) follows what the Cisco Security Cloud app indexes, so its
+search-time settings can be used with this add-on's data.
