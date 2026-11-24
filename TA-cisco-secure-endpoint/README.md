@@ -51,7 +51,7 @@ Everything is managed in Splunk Web:
 | Where | What it does there |
 |---|---|
 | Heavy forwarder (or the instance that runs inputs) | Runs the input. Required. |
-| Search heads | Audit log CIM mappings, event types and tags, `cisco:se` JSON fields, collector log fields for the Status dashboard. |
+| Search heads | Audit log CIM mappings, event types and tags, `cisco:se` JSON fields and CIM fields for detection events (with the Cisco Security Cloud app), collector log fields for the Status dashboard. |
 | Indexers | Nothing needed (data is parsed on the heavy forwarder). |
 
 Splunk Enterprise 9.x and 10.x, Splunk Cloud Platform (Victoria). Python 3
@@ -114,6 +114,17 @@ The API record as JSON (field names as Cisco returns them), plus
 event's timestamp (with milliseconds), the compromise's `updated_at` (or `created_at`), or the
 collection time for snapshots and top malware threats.
 
+The Cisco Security Cloud app's event types tag the detection events into Alerts and Malware. Its
+mappings leave gaps that this add-on fills (Cisco's settings for `cisco:se` outrank this add-on,
+so these use settings Cisco does not set):
+
+| Field | Cisco Security Cloud | This add-on |
+|---|---|---|
+| `signature` | `detection` only (missing on Exploit Prevention, Quarantine Failure) | `detection`, else the Exploit Prevention threat module / submodule (`Hacking Tool / PsExec`) or indicator, else `<event type>: <error>`, else the event type |
+| `severity` | not set (the raw API value is `Medium`) | lower case; `medium` for Exploit Prevention, which has none |
+| `action` | `blocked` for Threat Quarantined and Cloud Recall Quarantine only | also `allowed` for Threat Detected and Quarantine Failure (the file was not removed) and `blocked` for Exploit Prevention (assumes Protect mode; in Audit mode the process is not stopped) |
+| `mitre_tactic_id`, `mitre_technique_id` | not set (Cisco's `tactics` / `mitre_technique` read another path) | from `tactics{}` / `techniques{}` |
+
 ### `cisco:se:audit`
 
 The API record as JSON (`event`, `audit_log_type`, `audit_log_id`,
@@ -159,6 +170,12 @@ Event types: `cisco_se_audit`, `cisco_se_authentication`,
 See `README/inputs.conf.spec`.
 
 ## Release notes
+
+### 1.0.1
+
+* `cisco:se` detection events (Alerts, Malware): `signature` for Exploit Prevention and
+  Quarantine Failure, `severity` in lower case, `action` for Threat Detected, Quarantine Failure
+  and Exploit Prevention, `mitre_tactic_id` / `mitre_technique_id`. Collection is unchanged.
 
 ### 1.0.0
 

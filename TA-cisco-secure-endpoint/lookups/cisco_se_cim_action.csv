@@ -1,0 +1,6 @@
+event_type_id,action,event_type
+553648143,blocked,Threat Quarantined
+553648147,blocked,Cloud Recall Quarantine of False Negative
+1090519054,allowed,Threat Detected
+2164260880,allowed,Quarantine Failure
+1090519103,blocked,Exploit Prevention

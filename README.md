@@ -1,6 +1,6 @@
 # Secure Endpoint (AMP) Events and Audit Logs Add-on for Cisco
 
-Splunk add-on `TA-cisco-secure-endpoint`, version 1.0.0.
+Splunk add-on `TA-cisco-secure-endpoint`, version 1.0.1.
 
 Collects Cisco Secure Endpoint (AMP for Endpoints) events, audit logs, compromises, computers, vulnerabilities and top malware threats from the Secure Endpoint API, each selectable with its own schedule. Event types, audit log types and groups are picked from lists read live from the API (all, only selected, all except selected). Events use sourcetype cisco:se in the Cisco Security Cloud app's format; audit logs use cisco:se:audit with CIM mappings. Not affiliated with Cisco.
 
@@ -9,6 +9,7 @@ Collects Cisco Secure Endpoint (AMP for Endpoints) events, audit logs, compromis
 - `TA-cisco-secure-endpoint/`: the app exactly as shipped to Splunkbase (unpacked from the release package)
 - `tools/package.py`: builds the Splunkbase package and runs offline AppInspect-style checks
 - `docs/`: Splunkbase listing text and screenshots
+- `tests/cim_se_test.py`: offline checks of the cisco:se CIM settings (`python3 tests/cim_se_test.py`)
 
 ## Build
 
