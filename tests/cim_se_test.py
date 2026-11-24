@@ -52,7 +52,7 @@ def signature(e):                     # EVAL-signature
     tm = e.get("file.attack_details.threat_module")
     if tm:
         sm = e.get("file.attack_details.threat_submodule")
-        return tm + (" / " + sm if sm else "")
+        return tm + (" / " + sm if sm else "")   # empty submodule: no " / "
     ind = e.get("file.attack_details.indicators{}.short_description")
     if ind:
         return ind[0]
@@ -77,6 +77,9 @@ EVENTS = [
     (dict(event_type="Exploit Prevention", event_type_id="1090519103", **{
         "file.attack_details.indicators{}.short_description": ["Example Indicator"]}),
      "Example Indicator", "medium", "blocked"),
+    (dict(event_type="Exploit Prevention", event_type_id="1090519103", **{
+        "file.attack_details.threat_module": "Script Execution", "file.attack_details.threat_submodule": ""}),
+     "Script Execution", "medium", "blocked"),
     (dict(event_type="Quarantine Failure", event_type_id="2164260880", severity="Medium", **{"error.description": "Cannot delete"}),
      "Quarantine Failure: Cannot delete", "medium", "allowed"),
     (dict(event_type="Threat Quarantined", event_type_id="553648143", detection="W32.Example.Trojan", severity="High"),
