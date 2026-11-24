@@ -106,6 +106,10 @@ def main():
           "lookup keeps Cisco's two quarantine rows (blocked)")
     check(set(rows.values()) <= {"allowed", "blocked", "deferred"}, "lookup outputs CIM Malware actions only")
 
+    meta = open(os.path.join(APP, "metadata", "default.meta"), encoding="utf-8").read()
+    check(re.search(r"^\[lookups\]\s*\nexport = system", meta, re.M) is not None,
+          "metadata exports lookups (the table must be visible from other apps)")
+
     for e, sig, sev, act in EVENTS:
         got = (signature(e), severity(e), rows.get(e["event_type_id"]))
         check(got == (sig, sev, act), f"{e['event_type']}: {got}")

@@ -16,6 +16,10 @@ export = system
 [transforms]
 export = system
 
+# The CIM action lookup's table, used by [cisco:se] from any app
+[lookups]
+export = system
+
 [views]
 access = read : [ * ], write : [ admin, sc_admin ]
 
