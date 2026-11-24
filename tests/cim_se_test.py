@@ -73,13 +73,13 @@ EVENTS = [
     (dict(event_type="Exploit Prevention", event_type_id="1090519103", **{
         "file.attack_details.threat_module": "Hacking Tool", "file.attack_details.threat_submodule": "PsExec",
         "file.attack_details.indicators{}.short_description": ["PsExec Execution"]}),
-     "Hacking Tool / PsExec", "medium", "blocked"),
+     "Hacking Tool / PsExec", "medium", "allowed"),
     (dict(event_type="Exploit Prevention", event_type_id="1090519103", **{
         "file.attack_details.indicators{}.short_description": ["Example Indicator"]}),
-     "Example Indicator", "medium", "blocked"),
+     "Example Indicator", "medium", "allowed"),
     (dict(event_type="Exploit Prevention", event_type_id="1090519103", **{
         "file.attack_details.threat_module": "Script Execution", "file.attack_details.threat_submodule": ""}),
-     "Script Execution", "medium", "blocked"),
+     "Script Execution", "medium", "allowed"),
     (dict(event_type="Quarantine Failure", event_type_id="2164260880", severity="Medium", **{"error.description": "Cannot delete"}),
      "Quarantine Failure: Cannot delete", "medium", "allowed"),
     (dict(event_type="Threat Quarantined", event_type_id="553648143", detection="W32.Example.Trojan", severity="High"),

@@ -122,7 +122,7 @@ so these use settings Cisco does not set):
 |---|---|---|
 | `signature` | `detection` only (missing on Exploit Prevention, Quarantine Failure) | `detection`, else the Exploit Prevention threat module / submodule (`Hacking Tool / PsExec`) or indicator, else `<event type>: <error>`, else the event type |
 | `severity` | not set (the raw API value is `Medium`) | lower case; `medium` for Exploit Prevention, which has none |
-| `action` | `blocked` for Threat Quarantined and Cloud Recall Quarantine only | also `allowed` for Threat Detected and Quarantine Failure (the file was not removed) and `blocked` for Exploit Prevention (assumes Protect mode; in Audit mode the process is not stopped) |
+| `action` | `blocked` for Threat Quarantined and Cloud Recall Quarantine only | also `allowed` for Threat Detected and Quarantine Failure (the file was not removed) and Exploit Prevention (the event does not say whether the engine ran in Block or Audit mode, so it is not assumed to have stopped anything; to treat it as `blocked`, change its row in `lookups/cisco_se_cim_action.csv`) |
 | `mitre_tactic_id`, `mitre_technique_id` | not set (Cisco's `tactics` / `mitre_technique` read another path) | from `tactics{}` / `techniques{}` |
 
 ### `cisco:se:audit`
@@ -174,7 +174,7 @@ See `README/inputs.conf.spec`.
 ### 1.0.1
 
 * `cisco:se` detection events (Alerts, Malware): `signature` for Exploit Prevention and
-  Quarantine Failure, `severity` in lower case, `action` for Threat Detected, Quarantine Failure
+  Quarantine Failure, `severity` in lower case, `action` (`allowed`) for Threat Detected, Quarantine Failure
   and Exploit Prevention, `mitre_tactic_id` / `mitre_technique_id`. Collection is unchanged.
 
 ### 1.0.0
